@@ -14,27 +14,27 @@ Mark tasks complete as you go: change `- [ ]` to `- [x]`.
 
 ### 1.1 — Project Setup
 
-- [ ] **Install dependencies**
+- [x] **Install dependencies**
   Run `npm install react-hook-form zod`. Verify both appear in `package.json` under `dependencies`.
 
-- [ ] **Create `.env.local`**
+- [x] **Create `.env.local`**
   Create file at project root with the following contents (do not commit this file):
   ```
   VITE_API_BASE=/api
   VITE_WS_PATH=/ws
   ```
 
-- [ ] **Create `.env.example`**
+- [x] **Create `.env.example`**
   Create file at project root with the same keys but empty/placeholder values and a comment per line explaining each variable. This file IS committed.
 
-- [ ] **Verify `.env.local` is git-ignored**
+- [x] **Verify `.env.local` is git-ignored**
   Check `.gitignore` contains a line for `.env.local`. If missing, add it.
 
 ---
 
 ### 1.2 — Extend Types
 
-- [ ] **Add new types to `src/types/index.ts`**
+- [x] **Add new types to `src/types/index.ts`**
   Append the following type and interface definitions (do not remove existing ones):
   - Interface `AuthUser`: fields `id: string`, `username: string`, `role: 'admin'`
   - Interface `AuthState`: fields `user: AuthUser | null`, `isAuthenticated: boolean`, `isLoading: boolean`
@@ -54,7 +54,7 @@ Mark tasks complete as you go: change `- [ ]` to `- [x]`.
 
 ### 1.3 — Base API Client
 
-- [ ] **Create `src/api/client.ts`**
+- [x] **Create `src/api/client.ts`**
 
   Declare module-level const `API_BASE: string` — read from `import.meta.env.VITE_API_BASE`, fall back to `'/api'` if undefined.
 
@@ -80,7 +80,7 @@ Mark tasks complete as you go: change `- [ ]` to `- [x]`.
 
 ### 1.4 — Auth API Module
 
-- [ ] **Create `src/api/auth.api.ts`**
+- [x] **Create `src/api/auth.api.ts`**
 
   Import `apiRequest` from `./client`.
 
@@ -102,7 +102,7 @@ Mark tasks complete as you go: change `- [ ]` to `- [x]`.
 
 ### 1.5 — Auth Context
 
-- [ ] **Create `src/auth/AuthContext.tsx`**
+- [x] **Create `src/auth/AuthContext.tsx`**
 
   Import `createContext` from React and `AuthContextType` from `../types`.
 
@@ -112,7 +112,7 @@ Mark tasks complete as you go: change `- [ ]` to `- [x]`.
 
 ### 1.6 — Auth Provider
 
-- [ ] **Create `src/auth/AuthProvider.tsx`**
+- [x] **Create `src/auth/AuthProvider.tsx`**
 
   Props: `{ children: React.ReactNode }`
 
@@ -139,7 +139,7 @@ Mark tasks complete as you go: change `- [ ]` to `- [x]`.
 
 ### 1.7 — useAuth Hook
 
-- [ ] **Create `src/auth/useAuth.ts`**
+- [x] **Create `src/auth/useAuth.ts`**
 
   Import `useContext` from React and `AuthContext` from `./AuthContext`.
 
@@ -152,7 +152,7 @@ Mark tasks complete as you go: change `- [ ]` to `- [x]`.
 
 ### 1.8 — LoadingSpinner Component
 
-- [ ] **Create `src/components/ui/LoadingSpinner.tsx`**
+- [x] **Create `src/components/ui/LoadingSpinner.tsx`**
 
   Props: `{ size?: 'sm' | 'md' | 'lg' }` (default: `'md'`)
 
@@ -164,7 +164,7 @@ Mark tasks complete as you go: change `- [ ]` to `- [x]`.
 
 ### 1.9 — ErrorBanner Component
 
-- [ ] **Create `src/components/ui/ErrorBanner.tsx`**
+- [x] **Create `src/components/ui/ErrorBanner.tsx`**
 
   Props: `{ message: string; onDismiss?: () => void }`
 
@@ -177,7 +177,7 @@ Mark tasks complete as you go: change `- [ ]` to `- [x]`.
 
 ### 1.10 — ProtectedRoute Component
 
-- [ ] **Create `src/auth/ProtectedRoute.tsx`**
+- [x] **Create `src/auth/ProtectedRoute.tsx`**
 
   Import `Navigate, Outlet` from `react-router-dom`, `useAuth` from `./useAuth`, `LoadingSpinner` from `../components/ui/LoadingSpinner`.
 
@@ -192,7 +192,7 @@ Mark tasks complete as you go: change `- [ ]` to `- [x]`.
 
 ### 1.11 — Login Page
 
-- [ ] **Create `src/pages/Login.tsx`**
+- [x] **Create `src/pages/Login.tsx`**
 
   Imports needed: `useForm` from `react-hook-form`, `zodResolver` from `@hookform/resolvers/zod`, `z` from `zod`, `useNavigate` from `react-router-dom`, `useAuth` from `../auth/useAuth`, `ErrorBanner` from `../components/ui/ErrorBanner`.
 
@@ -226,7 +226,7 @@ Mark tasks complete as you go: change `- [ ]` to `- [x]`.
 
 ### 1.12 — Wire Auth into App.tsx
 
-- [ ] **Update `src/App.tsx`**
+- [x] **Update `src/App.tsx`**
 
   1. Import `AuthProvider` from `./auth/AuthProvider`
   2. Import `ProtectedRoute` from `./auth/ProtectedRoute`
@@ -256,7 +256,7 @@ Mark tasks complete as you go: change `- [ ]` to `- [x]`.
 
 ### 1.13 — Topbar Auth Integration
 
-- [ ] **Update `src/components/layout/Topbar.tsx`**
+- [x] **Update `src/components/layout/Topbar.tsx`**
 
   1. Import `useAuth` from `../../auth/useAuth`
   2. Read `const { authState, logout } = useAuth()`
@@ -275,30 +275,30 @@ Mark tasks complete as you go: change `- [ ]` to `- [x]`.
 
 ### 2.1 — Resource API Modules
 
-- [ ] **Create `src/api/agents.api.ts`**
+- [x] **Create `src/api/agents.api.ts`**
 
   Export functions: `getAgents()`, `getAgent(id: string)`, `startAgent(id: string)`, `stopAgent(id: string)`, `restartAgent(id: string)`
   Each calls `apiRequest` with the correct method and path from SPEC.md §7.
 
-- [ ] **Create `src/api/tasks.api.ts`**
+- [x] **Create `src/api/tasks.api.ts`**
 
   Export functions: `getTasks(filters?: TaskFilters)`, `getTask(id: string)`, `cancelTask(id: string)`
   `getTasks` builds query string from `filters` object (only include keys with defined values).
 
-- [ ] **Create `src/api/workflows.api.ts`**
+- [x] **Create `src/api/workflows.api.ts`**
 
   Export functions: `getWorkflows()`, `getWorkflow(id: string)`, `createWorkflow(payload: WorkflowCreatePayload)`, `updateWorkflow(id: string, payload: WorkflowUpdatePayload)`, `deleteWorkflow(id: string)`, `runWorkflow(id: string)`, `pauseWorkflow(id: string)`, `getWorkflowRuns(id: string)`
 
-- [ ] **Create `src/api/operations.api.ts`**
+- [x] **Create `src/api/operations.api.ts`**
 
   Export function: `getOperations(filters?: OperationFilters)`
   Builds query string from `filters` (level, limit, offset).
 
-- [ ] **Create `src/api/files.api.ts`**
+- [x] **Create `src/api/files.api.ts`**
 
   Export functions: `getFileTree()` calls `GET /files`, `getFileNode(path: string)` calls `GET /files?path=<encoded-path>`.
 
-- [ ] **Create `src/api/settings.api.ts`**
+- [x] **Create `src/api/settings.api.ts`**
 
   Export functions: `getSettings()`, `updateSettings(partial: Partial<SystemSettings>)`
 
@@ -308,7 +308,7 @@ Mark tasks complete as you go: change `- [ ]` to `- [x]`.
 
 All hooks in `src/hooks/` follow the interface in SPEC.md §10.
 
-- [ ] **Create `src/hooks/useAgents.ts`**
+- [x] **Create `src/hooks/useAgents.ts`**
 
   Internal state: `agents: Agent[] | null`, `isLoading: boolean`, `error: string | null`
 
@@ -318,23 +318,23 @@ All hooks in `src/hooks/` follow the interface in SPEC.md §10.
 
   `refetch()`: manually triggers a new `getAgents()` call outside the interval.
 
-- [ ] **Create `src/hooks/useTasks.ts`**
+- [x] **Create `src/hooks/useTasks.ts`**
 
   Same pattern as `useAgents`. Accepts optional `filters: TaskFilters` parameter. Calls `getTasks(filters)`.
 
-- [ ] **Create `src/hooks/useWorkflows.ts`**
+- [x] **Create `src/hooks/useWorkflows.ts`**
 
   Same pattern. Calls `getWorkflows()`.
 
-- [ ] **Create `src/hooks/useOperations.ts`**
+- [x] **Create `src/hooks/useOperations.ts`**
 
   Same pattern. Accepts optional `filters: OperationFilters`. Calls `getOperations(filters)`.
 
-- [ ] **Create `src/hooks/useFileTree.ts`**
+- [x] **Create `src/hooks/useFileTree.ts`**
 
   Calls `getFileTree()` once on mount. No polling (file tree is not live). Exports `refetch` for manual refresh.
 
-- [ ] **Create `src/hooks/useSettings.ts`**
+- [x] **Create `src/hooks/useSettings.ts`**
 
   Calls `getSettings()` on mount. No polling.
 
@@ -347,7 +347,7 @@ All hooks in `src/hooks/` follow the interface in SPEC.md §10.
 
 ### 2.3 — WebSocket Client
 
-- [ ] **Create `src/ws/wsClient.ts`**
+- [x] **Create `src/ws/wsClient.ts`**
 
   Declare module-level const `WS_PATH: string` — read from `import.meta.env.VITE_WS_PATH`, fallback `'/ws'`.
 
@@ -374,7 +374,7 @@ All hooks in `src/hooks/` follow the interface in SPEC.md §10.
 
 ### 2.4 — Operations Stream Hook
 
-- [ ] **Create `src/ws/useOperationsStream.ts`**
+- [x] **Create `src/ws/useOperationsStream.ts`**
 
   This hook merges live WebSocket events with the REST polling fallback.
 
@@ -398,7 +398,7 @@ All hooks in `src/hooks/` follow the interface in SPEC.md §10.
 
 ### 2.5 — Update Dashboard.tsx
 
-- [ ] **Replace mock imports in `src/pages/Dashboard.tsx`**
+- [x] **Replace mock imports in `src/pages/Dashboard.tsx`**
 
   1. Remove `import { agents, tasks, workflows, operations } from '../data/mock'`
   2. Add: `import { useAgents } from '../hooks/useAgents'`, same for `useTasks`, `useWorkflows`
@@ -413,7 +413,7 @@ All hooks in `src/hooks/` follow the interface in SPEC.md §10.
 
 ### 2.6 — Update Agents.tsx
 
-- [ ] **Replace mock imports in `src/pages/Agents.tsx`**
+- [x] **Replace mock imports in `src/pages/Agents.tsx`**
 
   1. Remove `import { agents as allAgents } from '../data/mock'`
   2. Replace with `const { data: allAgents, isLoading, error, refetch } = useAgents()`
@@ -428,7 +428,7 @@ All hooks in `src/hooks/` follow the interface in SPEC.md §10.
 
 ### 2.7 — Update Workflows.tsx
 
-- [ ] **Replace mock imports in `src/pages/Workflows.tsx`**
+- [x] **Replace mock imports in `src/pages/Workflows.tsx`**
 
   1. Remove `import { workflows, agents } from '../data/mock'`
   2. Replace with `useWorkflows()` and `useAgents()`
@@ -440,7 +440,7 @@ All hooks in `src/hooks/` follow the interface in SPEC.md §10.
 
 ### 2.8 — Update Tasks.tsx
 
-- [ ] **Replace mock imports in `src/pages/Tasks.tsx`**
+- [x] **Replace mock imports in `src/pages/Tasks.tsx`**
 
   1. Remove `import { tasks as allTasks } from '../data/mock'`
   2. Replace with `useTasks()`
@@ -452,7 +452,7 @@ All hooks in `src/hooks/` follow the interface in SPEC.md §10.
 
 ### 2.9 — Update FileSystem.tsx
 
-- [ ] **Replace mock imports in `src/pages/FileSystem.tsx`**
+- [x] **Replace mock imports in `src/pages/FileSystem.tsx`**
 
   1. Remove `import { fileTree } from '../data/mock'`
   2. Call `const { data: rootNode, isLoading, error } = useFileTree()`
@@ -463,7 +463,7 @@ All hooks in `src/hooks/` follow the interface in SPEC.md §10.
 
 ### 2.10 — Update Operations.tsx
 
-- [ ] **Replace mock imports in `src/pages/Operations.tsx`**
+- [x] **Replace mock imports in `src/pages/Operations.tsx`**
 
   1. Remove `import { operations as allOps } from '../data/mock'`
   2. Call `const { liveOperations, isConnected } = useOperationsStream()`
@@ -474,7 +474,7 @@ All hooks in `src/hooks/` follow the interface in SPEC.md §10.
 
 ### 2.11 — Update Settings.tsx
 
-- [ ] **Replace static defaults in `src/pages/Settings.tsx`**
+- [x] **Replace static defaults in `src/pages/Settings.tsx`**
 
   1. Call `const { data: settings, isLoading, error, saveSettings, isSaving, saveError } = useSettings()`
   2. Add `LoadingSpinner` and `ErrorBanner` render guards for initial load

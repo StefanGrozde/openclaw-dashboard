@@ -1,6 +1,9 @@
 import { useState } from 'react';
 import { Folder, FolderOpen, File, ChevronRight, ChevronDown } from 'lucide-react';
-import { fileTree } from '../data/mock';
+import { getFileNode } from '../api/files.api';
+import ErrorBanner from '../components/ui/ErrorBanner';
+import LoadingSpinner from '../components/ui/LoadingSpinner';
+import { useFileTree } from '../hooks/useFileTree';
 import type { FileNode } from '../types';
 
 function formatSize(bytes?: number): string {
@@ -22,15 +25,44 @@ function FileTreeNode({
   onSelect: (node: FileNode) => void;
 }) {
   const [expanded, setExpanded] = useState(depth < 2);
+  const [loadedChildren, setLoadedChildren] = useState<FileNode[] | undefined>(node.children);
+  const [isLoadingChildren, setIsLoadingChildren] = useState(false);
   const isDir = node.type === 'directory';
   const isSelected = selected === node.id;
+  const children = loadedChildren ?? node.children;
+
+  async function handleToggle(nextExpanded: boolean) {
+    setExpanded(nextExpanded);
+
+    if (!isDir || !nextExpanded || children !== undefined) {
+      return;
+    }
+
+    setIsLoadingChildren(true);
+
+    try {
+      const result = await getFileNode(node.path);
+      const nextChildren = result.children ?? [];
+      const nextNode = { ...node, children: nextChildren };
+      setLoadedChildren(nextChildren);
+
+      if (isSelected) {
+        onSelect(nextNode);
+      }
+    } finally {
+      setIsLoadingChildren(false);
+    }
+  }
 
   return (
     <div>
       <button
         onClick={() => {
-          if (isDir) setExpanded(e => !e);
-          onSelect(node);
+          const nextNode = { ...node, children };
+          if (isDir) {
+            void handleToggle(!expanded);
+          }
+          onSelect(nextNode);
         }}
         className={`w-full flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm transition-colors text-left group ${
           isSelected ? 'bg-blue-600/15 text-blue-400' : 'text-gray-400 hover:bg-[#141c2e] hover:text-gray-200'
@@ -53,14 +85,15 @@ function FileTreeNode({
           </>
         )}
         <span className="truncate">{node.name}</span>
+        {isDir && isLoadingChildren ? <LoadingSpinner size="sm" /> : null}
         {!isDir && node.size && (
           <span className="ml-auto text-[10px] text-gray-600 shrink-0">{formatSize(node.size)}</span>
         )}
       </button>
 
-      {isDir && expanded && node.children && (
+      {isDir && expanded && children && (
         <div>
-          {node.children.map(child => (
+          {children.map(child => (
             <FileTreeNode
               key={child.id}
               node={child}
@@ -81,9 +114,18 @@ const extIcon: Record<string, string> = {
 };
 
 export default function FileSystem() {
+  const { data: rootNode, isLoading, error } = useFileTree();
   const [selected, setSelected] = useState<FileNode | null>(null);
 
   const ext = selected?.name.split('.').pop() ?? '';
+
+  if (isLoading) {
+    return (
+      <div className="flex min-h-[50vh] items-center justify-center">
+        <LoadingSpinner size="lg" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-5">
@@ -92,10 +134,12 @@ export default function FileSystem() {
         <p className="text-gray-500 text-sm mt-0.5">Browse the Openclaw system file structure</p>
       </div>
 
+      {error ? <ErrorBanner message={error} /> : null}
+
       <div className="flex gap-4 h-[calc(100vh-200px)]">
         {/* Tree */}
         <div className="w-72 bg-[#0e1320] border border-[#1a2236] rounded-xl p-2 overflow-y-auto shrink-0">
-          <FileTreeNode node={fileTree} selected={selected?.id ?? null} onSelect={setSelected} />
+          {rootNode ? <FileTreeNode node={rootNode} selected={selected?.id ?? null} onSelect={setSelected} /> : null}
         </div>
 
         {/* Detail panel */}

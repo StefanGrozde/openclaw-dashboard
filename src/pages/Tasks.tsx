@@ -1,6 +1,9 @@
 import { useState } from 'react';
 import { ListTodo, AlertTriangle, ChevronUp, ChevronDown } from 'lucide-react';
-import { tasks as allTasks } from '../data/mock';
+import { cancelTask } from '../api/tasks.api';
+import ErrorBanner from '../components/ui/ErrorBanner';
+import LoadingSpinner from '../components/ui/LoadingSpinner';
+import { useTasks } from '../hooks/useTasks';
 import type { TaskStatus, Priority } from '../types';
 
 const statusConfig: Record<TaskStatus, { label: string; badge: string }> = {
@@ -24,8 +27,13 @@ const priorityOrder: Record<Priority, number> = { critical: 0, high: 1, medium: 
 const statusOrder: Record<TaskStatus, number> = { running: 0, queued: 1, paused: 2, failed: 3, completed: 4 };
 
 export default function Tasks() {
+  const { data: taskData, isLoading, error, refetch } = useTasks();
   const [statusFilter, setStatusFilter] = useState<TaskStatus | 'all'>('all');
   const [sort, setSort] = useState<{ key: SortKey; dir: 'asc' | 'desc' }>({ key: 'priority', dir: 'asc' });
+  const [cancelLoadingId, setCancelLoadingId] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
+
+  const allTasks = taskData ?? [];
 
   const filtered = (statusFilter === 'all' ? allTasks : allTasks.filter(t => t.status === statusFilter))
     .slice()
@@ -45,6 +53,28 @@ export default function Tasks() {
   function SortIcon({ k }: { k: SortKey }) {
     if (sort.key !== k) return <ChevronDown size={12} className="text-gray-700" />;
     return sort.dir === 'asc' ? <ChevronUp size={12} className="text-blue-400" /> : <ChevronDown size={12} className="text-blue-400" />;
+  }
+
+  async function handleCancel(taskId: string) {
+    setActionError(null);
+    setCancelLoadingId(taskId);
+
+    try {
+      await cancelTask(taskId);
+      await refetch();
+    } catch (err) {
+      setActionError(err instanceof Error ? err.message : 'Failed to cancel task');
+    } finally {
+      setCancelLoadingId(null);
+    }
+  }
+
+  if (isLoading) {
+    return (
+      <div className="flex min-h-[50vh] items-center justify-center">
+        <LoadingSpinner size="lg" />
+      </div>
+    );
   }
 
   return (
@@ -70,6 +100,9 @@ export default function Tasks() {
           ))}
         </div>
       </div>
+
+      {error ? <ErrorBanner message={error} /> : null}
+      {actionError ? <ErrorBanner message={actionError} onDismiss={() => setActionError(null)} /> : null}
 
       <div className="bg-[#0e1320] border border-[#1a2236] rounded-xl overflow-hidden">
         <table className="w-full text-sm">
@@ -101,6 +134,7 @@ export default function Tasks() {
               >
                 <span className="flex items-center gap-1">Created <SortIcon k="createdAt" /></span>
               </th>
+              <th className="text-left px-4 py-3 text-gray-500 font-medium">Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-[#1a2236]">
@@ -140,6 +174,23 @@ export default function Tasks() {
                   </td>
                   <td className="px-4 py-3.5 text-gray-600 text-xs whitespace-nowrap">
                     {new Date(task.createdAt).toLocaleString()}
+                  </td>
+                  <td className="px-4 py-3.5">
+                    {(task.status === 'running' || task.status === 'queued') ? (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          void handleCancel(task.id);
+                        }}
+                        disabled={cancelLoadingId === task.id}
+                        className="flex items-center gap-1.5 rounded-md border border-red-900 px-3 py-1.5 text-xs font-medium text-red-300 transition-colors hover:bg-red-950/40 disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        {cancelLoadingId === task.id ? <LoadingSpinner size="sm" /> : null}
+                        Cancel
+                      </button>
+                    ) : (
+                      <span className="text-xs text-gray-600">-</span>
+                    )}
                   </td>
                 </tr>
               );

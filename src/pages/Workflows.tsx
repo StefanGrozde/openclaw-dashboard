@@ -1,5 +1,10 @@
+import { useState } from 'react';
 import { GitBranch, Play, Pause, Settings, Bot, CheckCircle2, Clock } from 'lucide-react';
-import { workflows, agents } from '../data/mock';
+import { pauseWorkflow, runWorkflow } from '../api/workflows.api';
+import ErrorBanner from '../components/ui/ErrorBanner';
+import LoadingSpinner from '../components/ui/LoadingSpinner';
+import { useAgents } from '../hooks/useAgents';
+import { useWorkflows } from '../hooks/useWorkflows';
 import type { WorkflowStatus } from '../types';
 
 const statusConfig: Record<WorkflowStatus, { label: string; badge: string; dot: string }> = {
@@ -9,6 +14,41 @@ const statusConfig: Record<WorkflowStatus, { label: string; badge: string; dot: 
 };
 
 export default function Workflows() {
+  const { data: workflowData, isLoading: workflowsLoading, error: workflowsError, refetch } = useWorkflows();
+  const { data: agentData, isLoading: agentsLoading, error: agentsError } = useAgents();
+  const [actionLoading, setActionLoading] = useState<Record<string, boolean>>({});
+  const [actionError, setActionError] = useState<string | null>(null);
+
+  const workflows = workflowData ?? [];
+  const agents = agentData ?? [];
+
+  async function handleWorkflowAction(workflowId: string, action: 'run' | 'pause') {
+    setActionError(null);
+    setActionLoading((current) => ({ ...current, [workflowId]: true }));
+
+    try {
+      if (action === 'run') {
+        await runWorkflow(workflowId);
+      } else {
+        await pauseWorkflow(workflowId);
+      }
+
+      await refetch();
+    } catch (err) {
+      setActionError(err instanceof Error ? err.message : `Failed to ${action} workflow`);
+    } finally {
+      setActionLoading((current) => ({ ...current, [workflowId]: false }));
+    }
+  }
+
+  if (workflowsLoading || agentsLoading) {
+    return (
+      <div className="flex min-h-[50vh] items-center justify-center">
+        <LoadingSpinner size="lg" />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-5">
       <div className="flex items-center justify-between">
@@ -20,6 +60,10 @@ export default function Workflows() {
           <GitBranch size={14} /> New Workflow
         </button>
       </div>
+
+      {workflowsError ? <ErrorBanner message={workflowsError} /> : null}
+      {agentsError ? <ErrorBanner message={agentsError} /> : null}
+      {actionError ? <ErrorBanner message={actionError} onDismiss={() => setActionError(null)} /> : null}
 
       <div className="space-y-4">
         {workflows.map(wf => {
@@ -45,13 +89,29 @@ export default function Workflows() {
 
                 <div className="flex items-center gap-2 shrink-0">
                   {wf.status === 'active' && (
-                    <button className="flex items-center gap-1.5 px-3 py-1.5 bg-[#141c2e] hover:bg-yellow-950/50 text-gray-400 hover:text-yellow-400 border border-[#1a2236] hover:border-yellow-900 rounded-md text-xs font-medium transition-colors">
-                      <Pause size={11} /> Pause
+                    <button
+                      type="button"
+                      onClick={() => {
+                        void handleWorkflowAction(wf.id, 'pause');
+                      }}
+                      disabled={Boolean(actionLoading[wf.id])}
+                      className="flex items-center gap-1.5 px-3 py-1.5 bg-[#141c2e] hover:bg-yellow-950/50 text-gray-400 hover:text-yellow-400 border border-[#1a2236] hover:border-yellow-900 rounded-md text-xs font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      {actionLoading[wf.id] ? <LoadingSpinner size="sm" /> : <Pause size={11} />}
+                      Pause
                     </button>
                   )}
                   {wf.status !== 'active' && (
-                    <button className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded-md text-xs font-medium transition-colors">
-                      <Play size={11} /> Run
+                    <button
+                      type="button"
+                      onClick={() => {
+                        void handleWorkflowAction(wf.id, 'run');
+                      }}
+                      disabled={Boolean(actionLoading[wf.id])}
+                      className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded-md text-xs font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      {actionLoading[wf.id] ? <LoadingSpinner size="sm" /> : <Play size={11} />}
+                      Run
                     </button>
                   )}
                   <button className="flex items-center gap-1.5 px-3 py-1.5 bg-[#141c2e] hover:bg-[#1a2236] text-gray-400 border border-[#1a2236] rounded-md text-xs font-medium transition-colors">
@@ -104,6 +164,11 @@ export default function Workflows() {
             </div>
           );
         })}
+        {workflows.length === 0 && (
+          <div className="rounded-xl border border-[#1a2236] bg-[#0e1320] p-6 text-sm text-gray-500">
+            No workflows available.
+          </div>
+        )}
       </div>
     </div>
   );

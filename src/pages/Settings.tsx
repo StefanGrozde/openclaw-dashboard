@@ -1,13 +1,18 @@
-import { Settings as SettingsIcon, Key, Bell, Database, Shield, Cpu, Save } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { Settings as SettingsIcon, Bell, Database, Shield, Cpu, Save } from 'lucide-react';
+import ErrorBanner from '../components/ui/ErrorBanner';
+import LoadingSpinner from '../components/ui/LoadingSpinner';
+import { useSettings } from '../hooks/useSettings';
+import type { SystemSettings } from '../types';
 
 function Section({ title, icon: Icon, children }: { title: string; icon: React.ElementType; children: React.ReactNode }) {
   return (
-    <div className="bg-[#0e1320] border border-[#1a2236] rounded-xl overflow-hidden">
-      <div className="flex items-center gap-2 px-5 py-4 border-b border-[#1a2236]">
+    <div className="overflow-hidden rounded-xl border border-[#1a2236] bg-[#0e1320]">
+      <div className="flex items-center gap-2 border-b border-[#1a2236] px-5 py-4">
         <Icon size={15} className="text-blue-400" />
         <span className="text-sm font-semibold text-white">{title}</span>
       </div>
-      <div className="p-5 space-y-4">{children}</div>
+      <div className="space-y-4 p-5">{children}</div>
     </div>
   );
 }
@@ -15,130 +20,250 @@ function Section({ title, icon: Icon, children }: { title: string; icon: React.E
 function Field({ label, description, children }: { label: string; description?: string; children: React.ReactNode }) {
   return (
     <div className="flex items-start justify-between gap-6">
-      <div className="flex-1 min-w-0">
-        <div className="text-sm text-gray-300 font-medium">{label}</div>
-        {description && <div className="text-xs text-gray-600 mt-0.5">{description}</div>}
+      <div className="min-w-0 flex-1">
+        <div className="text-sm font-medium text-gray-300">{label}</div>
+        {description ? <div className="mt-0.5 text-xs text-gray-600">{description}</div> : null}
       </div>
       <div className="shrink-0">{children}</div>
     </div>
   );
 }
 
-function Toggle({ defaultChecked = false }: { defaultChecked?: boolean }) {
+function Toggle({ checked, onChange }: { checked: boolean; onChange: (checked: boolean) => void }) {
   return (
-    <label className="relative inline-flex items-center cursor-pointer">
-      <input type="checkbox" defaultChecked={defaultChecked} className="sr-only peer" />
-      <div className="w-9 h-5 bg-[#1a2236] peer-checked:bg-blue-600 rounded-full transition-colors after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-4" />
+    <label className="relative inline-flex cursor-pointer items-center">
+      <input
+        type="checkbox"
+        checked={checked}
+        onChange={(event) => onChange(event.target.checked)}
+        className="peer sr-only"
+      />
+      <div className="h-5 w-9 rounded-full bg-[#1a2236] transition-colors after:absolute after:left-0.5 after:top-0.5 after:h-4 after:w-4 after:rounded-full after:bg-white after:transition-all after:content-[''] peer-checked:bg-blue-600 peer-checked:after:translate-x-4" />
     </label>
   );
 }
 
-function TextInput({ defaultValue, placeholder, mono = false }: { defaultValue?: string; placeholder?: string; mono?: boolean }) {
+function TextInput({
+  value,
+  onChange,
+  placeholder,
+  mono = false,
+}: {
+  value: string;
+  onChange: (value: string) => void;
+  placeholder?: string;
+  mono?: boolean;
+}) {
   return (
     <input
       type="text"
-      defaultValue={defaultValue}
+      value={value}
+      onChange={(event) => onChange(event.target.value)}
       placeholder={placeholder}
-      className={`bg-[#080b12] border border-[#1a2236] rounded-md px-3 py-1.5 text-sm text-gray-300 placeholder-gray-600 focus:outline-none focus:border-blue-700 w-60 ${mono ? 'font-mono' : ''}`}
+      className={`w-60 rounded-md border border-[#1a2236] bg-[#080b12] px-3 py-1.5 text-sm text-gray-300 placeholder-gray-600 focus:border-blue-700 focus:outline-none ${mono ? 'font-mono' : ''}`}
     />
   );
 }
 
-function Select({ options, defaultValue }: { options: string[]; defaultValue?: string }) {
+function Select({
+  options,
+  value,
+  onChange,
+}: {
+  options: string[];
+  value: string;
+  onChange: (value: string) => void;
+}) {
   return (
     <select
-      defaultValue={defaultValue}
-      className="bg-[#080b12] border border-[#1a2236] rounded-md px-3 py-1.5 text-sm text-gray-300 focus:outline-none focus:border-blue-700 w-60"
+      value={value}
+      onChange={(event) => onChange(event.target.value)}
+      className="w-60 rounded-md border border-[#1a2236] bg-[#080b12] px-3 py-1.5 text-sm text-gray-300 focus:border-blue-700 focus:outline-none"
     >
-      {options.map(o => <option key={o} value={o}>{o}</option>)}
+      {options.map((option) => (
+        <option key={option} value={option}>
+          {option}
+        </option>
+      ))}
     </select>
   );
 }
 
 export default function Settings() {
+  const { data: settings, isLoading, error, saveSettings, isSaving, saveError } = useSettings();
+  const [formValues, setFormValues] = useState<Partial<SystemSettings>>({});
+  const [saveSuccess, setSaveSuccess] = useState(false);
+
+  useEffect(() => {
+    if (!saveSuccess) {
+      return;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      setSaveSuccess(false);
+    }, 2000);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
+  }, [saveSuccess]);
+
+  function updateField<K extends keyof SystemSettings>(key: K, value: SystemSettings[K]) {
+    setFormValues((current) => ({
+      ...current,
+      [key]: value,
+    }));
+  }
+
+  async function handleSave() {
+    await saveSettings(formValues);
+    setSaveSuccess(true);
+    setFormValues({});
+  }
+
+  if (isLoading) {
+    return (
+      <div className="flex min-h-[50vh] items-center justify-center">
+        <LoadingSpinner size="lg" />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-5">
       <div>
         <h1 className="text-xl font-bold text-white">Settings</h1>
-        <p className="text-gray-500 text-sm mt-0.5">System configuration for the Openclaw platform</p>
+        <p className="mt-0.5 text-sm text-gray-500">System configuration for the Openclaw platform</p>
       </div>
 
-      <div className="space-y-4 max-w-3xl">
+      {error ? <ErrorBanner message={error} /> : null}
+      {saveError ? <ErrorBanner message={saveError} /> : null}
+
+      <div className="max-w-3xl space-y-4">
         <Section title="System" icon={SettingsIcon}>
           <Field label="System Name" description="Display name for this Openclaw instance">
-            <TextInput defaultValue="Openclaw Production" />
+            <TextInput
+              value={formValues.systemName ?? settings?.systemName ?? ''}
+              onChange={(value) => updateField('systemName', value)}
+            />
           </Field>
           <Field label="Default Agent Model" description="Model used for new agents unless overridden">
-            <Select options={['claude-opus-4-6', 'claude-sonnet-4-6', 'claude-haiku-4-5-20251001']} defaultValue="claude-sonnet-4-6" />
+            <Select
+              options={['claude-opus-4-6', 'claude-sonnet-4-6', 'claude-haiku-4-5-20251001']}
+              value={formValues.defaultModel ?? settings?.defaultModel ?? 'claude-sonnet-4-6'}
+              onChange={(value) => updateField('defaultModel', value)}
+            />
           </Field>
           <Field label="Max Concurrent Tasks" description="Maximum tasks that can run simultaneously">
-            <TextInput defaultValue="10" />
+            <TextInput
+              value={String(formValues.maxConcurrentTasks ?? settings?.maxConcurrentTasks ?? '')}
+              onChange={(value) => updateField('maxConcurrentTasks', Number(value))}
+            />
           </Field>
           <Field label="Task Timeout (seconds)" description="Default timeout before a task is marked failed">
-            <TextInput defaultValue="3600" />
-          </Field>
-        </Section>
-
-        <Section title="API Keys" icon={Key}>
-          <Field label="Anthropic API Key" description="Used for all Claude model requests">
-            <TextInput defaultValue="sk-ant-••••••••••••••••••••••" mono placeholder="sk-ant-..." />
-          </Field>
-          <Field label="Openclaw API Key" description="Key for external systems to call this instance">
-            <TextInput defaultValue="oc-••••••••••••••••••••••" mono placeholder="oc-..." />
+            <TextInput
+              value={String(formValues.taskTimeoutSeconds ?? settings?.taskTimeoutSeconds ?? '')}
+              onChange={(value) => updateField('taskTimeoutSeconds', Number(value))}
+            />
           </Field>
         </Section>
 
         <Section title="Notifications" icon={Bell}>
           <Field label="Email Alerts" description="Send email on agent errors or task failures">
-            <Toggle defaultChecked />
+            <Toggle
+              checked={formValues.emailAlertsEnabled ?? settings?.emailAlertsEnabled ?? false}
+              onChange={(value) => updateField('emailAlertsEnabled', value)}
+            />
           </Field>
           <Field label="Slack Webhook" description="Post critical alerts to a Slack channel">
-            <Toggle />
+            <Toggle
+              checked={formValues.slackWebhookEnabled ?? settings?.slackWebhookEnabled ?? false}
+              onChange={(value) => updateField('slackWebhookEnabled', value)}
+            />
           </Field>
           <Field label="Alert on Task Failure" description="Trigger notification when any task fails">
-            <Toggle defaultChecked />
+            <Toggle
+              checked={formValues.alertOnTaskFailure ?? settings?.alertOnTaskFailure ?? false}
+              onChange={(value) => updateField('alertOnTaskFailure', value)}
+            />
           </Field>
           <Field label="Alert on Agent Offline" description="Trigger when a monitored agent goes offline">
-            <Toggle defaultChecked />
+            <Toggle
+              checked={formValues.alertOnAgentOffline ?? settings?.alertOnAgentOffline ?? false}
+              onChange={(value) => updateField('alertOnAgentOffline', value)}
+            />
           </Field>
         </Section>
 
         <Section title="Data & Storage" icon={Database}>
           <Field label="Log Retention (days)" description="How long to keep operation logs">
-            <TextInput defaultValue="90" />
+            <TextInput
+              value={String(formValues.logRetentionDays ?? settings?.logRetentionDays ?? '')}
+              onChange={(value) => updateField('logRetentionDays', Number(value))}
+            />
           </Field>
           <Field label="Output Storage Path" description="Base path for agent output files">
-            <TextInput defaultValue="/openclaw/data/outputs" mono />
+            <TextInput
+              value={formValues.outputStoragePath ?? settings?.outputStoragePath ?? ''}
+              onChange={(value) => updateField('outputStoragePath', value)}
+              mono
+            />
           </Field>
           <Field label="Auto-purge Completed Tasks" description="Remove completed task records after retention period">
-            <Toggle defaultChecked />
+            <Toggle
+              checked={formValues.autoPurgeCompleted ?? settings?.autoPurgeCompleted ?? false}
+              onChange={(value) => updateField('autoPurgeCompleted', value)}
+            />
           </Field>
         </Section>
 
         <Section title="Security" icon={Shield}>
-          <Field label="Require Auth on API" description="Enforce API key authentication on all endpoints">
-            <Toggle defaultChecked />
+          <Field label="Require Auth on API" description="Enforce authentication on gateway endpoints">
+            <Toggle
+              checked={formValues.requireAuth ?? settings?.requireAuth ?? false}
+              onChange={(value) => updateField('requireAuth', value)}
+            />
           </Field>
           <Field label="Audit Logging" description="Log all user actions and configuration changes">
-            <Toggle defaultChecked />
+            <Toggle
+              checked={formValues.auditLogging ?? settings?.auditLogging ?? false}
+              onChange={(value) => updateField('auditLogging', value)}
+            />
           </Field>
           <Field label="Sandbox Agent Execution" description="Run agent tasks in isolated environments">
-            <Toggle />
+            <Toggle
+              checked={formValues.sandboxExecution ?? settings?.sandboxExecution ?? false}
+              onChange={(value) => updateField('sandboxExecution', value)}
+            />
           </Field>
         </Section>
 
         <Section title="Performance" icon={Cpu}>
           <Field label="Agent Polling Interval (ms)" description="How often the UI refreshes agent status">
-            <TextInput defaultValue="5000" />
+            <TextInput
+              value={String(formValues.agentPollingInterval ?? settings?.agentPollingInterval ?? '')}
+              onChange={(value) => updateField('agentPollingInterval', Number(value))}
+            />
           </Field>
           <Field label="Max Tokens per Task" description="Token budget cap per individual task execution">
-            <TextInput defaultValue="100000" />
+            <TextInput
+              value={String(formValues.maxTokensPerTask ?? settings?.maxTokensPerTask ?? '')}
+              onChange={(value) => updateField('maxTokensPerTask', Number(value))}
+            />
           </Field>
         </Section>
 
         <div className="flex justify-end pt-2">
-          <button className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-md text-sm font-medium transition-colors">
-            <Save size={14} /> Save Changes
+          <button
+            type="button"
+            onClick={() => {
+              void handleSave();
+            }}
+            disabled={isSaving}
+            className="flex items-center gap-2 rounded-md bg-blue-600 px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-70"
+          >
+            {isSaving ? <LoadingSpinner size="sm" /> : <Save size={14} />}
+            {saveSuccess ? 'Saved ✓' : 'Save Changes'}
           </button>
         </div>
       </div>

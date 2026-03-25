@@ -1,6 +1,10 @@
-import { Bell, Search, Zap, Activity } from 'lucide-react';
+import { Bell, Search, Zap, Activity, LogOut } from 'lucide-react';
+import { useAuth } from '../../auth/useAuth';
 
 export default function Topbar() {
+  const { authState, logout } = useAuth();
+  const initials = (authState.user?.username ?? 'A').charAt(0).toUpperCase();
+
   return (
     <header className="h-14 bg-[#0e1320] border-b border-[#1a2236] flex items-center px-4 gap-4 fixed top-0 left-0 right-0 z-50">
       {/* Brand */}
@@ -38,9 +42,22 @@ export default function Topbar() {
           <span className="absolute top-0.5 right-0.5 w-2 h-2 bg-red-500 rounded-full border border-[#0e1320]" />
         </button>
 
-        {/* Avatar */}
-        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-blue-800 flex items-center justify-center text-white text-xs font-bold cursor-pointer">
-          AD
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => {
+              void logout();
+            }}
+            className="flex items-center gap-1.5 rounded-md border border-[#1a2236] px-2.5 py-1.5 text-xs font-medium text-gray-300 transition-colors hover:bg-[#1a2236] hover:text-white"
+          >
+            <LogOut size={14} />
+            <span>Sign out</span>
+          </button>
+
+          {/* Avatar */}
+          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-blue-800 flex items-center justify-center text-white text-xs font-bold cursor-pointer">
+            {initials}
+          </div>
         </div>
       </div>
     </header>

@@ -1,6 +1,9 @@
 import { useState } from 'react';
 import { Bot, Play, Square, RefreshCw, ChevronDown } from 'lucide-react';
-import { agents as allAgents } from '../data/mock';
+import { restartAgent, stopAgent } from '../api/agents.api';
+import ErrorBanner from '../components/ui/ErrorBanner';
+import LoadingSpinner from '../components/ui/LoadingSpinner';
+import { useAgents } from '../hooks/useAgents';
 import type { AgentStatus } from '../types';
 
 const statusConfig: Record<AgentStatus, { label: string; dot: string; badge: string }> = {
@@ -11,11 +14,42 @@ const statusConfig: Record<AgentStatus, { label: string; dot: string; badge: str
 };
 
 export default function Agents() {
+  const { data: allAgentsData, isLoading, error, refetch } = useAgents();
   const [filter, setFilter] = useState<AgentStatus | 'all'>('all');
   const [selected, setSelected] = useState<string | null>(null);
+  const [actionLoading, setActionLoading] = useState<Record<string, 'restart' | 'stop' | null>>({});
+  const [actionError, setActionError] = useState<string | null>(null);
+
+  const allAgents = allAgentsData ?? [];
 
   const filtered = filter === 'all' ? allAgents : allAgents.filter(a => a.status === filter);
-  const selectedAgent = allAgents.find(a => a.id === selected);
+
+  async function handleAgentAction(agentId: string, action: 'restart' | 'stop') {
+    setActionError(null);
+    setActionLoading((current) => ({ ...current, [agentId]: action }));
+
+    try {
+      if (action === 'restart') {
+        await restartAgent(agentId);
+      } else {
+        await stopAgent(agentId);
+      }
+
+      await refetch();
+    } catch (err) {
+      setActionError(err instanceof Error ? err.message : `Failed to ${action} agent`);
+    } finally {
+      setActionLoading((current) => ({ ...current, [agentId]: null }));
+    }
+  }
+
+  if (isLoading) {
+    return (
+      <div className="flex min-h-[50vh] items-center justify-center">
+        <LoadingSpinner size="lg" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-5">
@@ -40,6 +74,9 @@ export default function Agents() {
           ))}
         </div>
       </div>
+
+      {error ? <ErrorBanner message={error} /> : null}
+      {actionError ? <ErrorBanner message={actionError} onDismiss={() => setActionError(null)} /> : null}
 
       <div className="grid grid-cols-3 gap-4">
         {/* Agent list */}
@@ -102,11 +139,29 @@ export default function Agents() {
                       <button className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded-md text-xs font-medium transition-colors">
                         <Play size={11} /> Run Task
                       </button>
-                      <button className="flex items-center gap-1.5 px-3 py-1.5 bg-[#141c2e] hover:bg-[#1a2236] text-gray-300 border border-[#1a2236] rounded-md text-xs font-medium transition-colors">
-                        <RefreshCw size={11} /> Restart
+                      <button
+                        type="button"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          void handleAgentAction(agent.id, 'restart');
+                        }}
+                        disabled={actionLoading[agent.id] !== null && actionLoading[agent.id] !== undefined}
+                        className="flex items-center gap-1.5 px-3 py-1.5 bg-[#141c2e] hover:bg-[#1a2236] text-gray-300 border border-[#1a2236] rounded-md text-xs font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        {actionLoading[agent.id] === 'restart' ? <LoadingSpinner size="sm" /> : <RefreshCw size={11} />}
+                        Restart
                       </button>
-                      <button className="flex items-center gap-1.5 px-3 py-1.5 bg-[#141c2e] hover:bg-red-950/50 text-gray-400 hover:text-red-400 border border-[#1a2236] hover:border-red-900 rounded-md text-xs font-medium transition-colors">
-                        <Square size={11} /> Stop
+                      <button
+                        type="button"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          void handleAgentAction(agent.id, 'stop');
+                        }}
+                        disabled={actionLoading[agent.id] !== null && actionLoading[agent.id] !== undefined}
+                        className="flex items-center gap-1.5 px-3 py-1.5 bg-[#141c2e] hover:bg-red-950/50 text-gray-400 hover:text-red-400 border border-[#1a2236] hover:border-red-900 rounded-md text-xs font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        {actionLoading[agent.id] === 'stop' ? <LoadingSpinner size="sm" /> : <Square size={11} />}
+                        Stop
                       </button>
                     </div>
                   </div>
@@ -114,6 +169,11 @@ export default function Agents() {
               </button>
             );
           })}
+          {filtered.length === 0 && (
+            <div className="rounded-xl border border-[#1a2236] bg-[#0e1320] p-6 text-sm text-gray-500">
+              No agents match the current filter.
+            </div>
+          )}
         </div>
 
         {/* Summary panel */}

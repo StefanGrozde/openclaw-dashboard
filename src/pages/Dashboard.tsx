@@ -1,5 +1,10 @@
-import { Bot, ListTodo, GitBranch, Activity, TrendingUp, AlertTriangle, CheckCircle2, Clock } from 'lucide-react';
-import { agents, tasks, workflows, operations } from '../data/mock';
+import { Bot, ListTodo, GitBranch, Activity, AlertTriangle, CheckCircle2, Clock } from 'lucide-react';
+import LoadingSpinner from '../components/ui/LoadingSpinner';
+import ErrorBanner from '../components/ui/ErrorBanner';
+import { useAgents } from '../hooks/useAgents';
+import { useTasks } from '../hooks/useTasks';
+import { useWorkflows } from '../hooks/useWorkflows';
+import { useOperationsStream } from '../ws/useOperationsStream';
 
 function StatCard({ label, value, icon: Icon, color, sub }: {
   label: string; value: string | number; icon: React.ElementType; color: string; sub?: string;
@@ -40,13 +45,31 @@ const statusColor: Record<string, string> = {
 };
 
 export default function Dashboard() {
+  const { data: agentsData, isLoading: agentsLoading, error: agentsError } = useAgents();
+  const { data: tasksData, isLoading: tasksLoading, error: tasksError } = useTasks();
+  const { data: workflowsData, isLoading: workflowsLoading, error: workflowsError } = useWorkflows();
+  const { liveOperations } = useOperationsStream();
+
+  const agents = agentsData ?? [];
+  const tasks = tasksData ?? [];
+  const workflows = workflowsData ?? [];
+
   const activeAgents = agents.filter(a => a.status === 'active').length;
   const runningTasks = tasks.filter(t => t.status === 'running').length;
   const activeWorkflows = workflows.filter(w => w.status === 'active').length;
   const errorCount = agents.filter(a => a.status === 'error').length + tasks.filter(t => t.status === 'failed').length;
 
-  const recentOps = operations.slice(0, 6);
+  const recentOps = liveOperations.slice(0, 6);
   const activeTasks = tasks.filter(t => t.status === 'running' || t.status === 'queued').slice(0, 5);
+  const errors = [agentsError, tasksError, workflowsError].filter(Boolean) as string[];
+
+  if (agentsLoading || tasksLoading || workflowsLoading) {
+    return (
+      <div className="flex min-h-[50vh] items-center justify-center">
+        <LoadingSpinner size="lg" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -54,6 +77,10 @@ export default function Dashboard() {
         <h1 className="text-xl font-bold text-white">System Overview</h1>
         <p className="text-gray-500 text-sm mt-0.5">Real-time status of the Openclaw agent system</p>
       </div>
+
+      {errors.map((message) => (
+        <ErrorBanner key={message} message={message} />
+      ))}
 
       {/* Stat cards */}
       <div className="grid grid-cols-4 gap-4">
@@ -92,6 +119,7 @@ export default function Dashboard() {
                 </div>
               </div>
             ))}
+            {activeTasks.length === 0 && <div className="text-sm text-gray-500">No active tasks available.</div>}
           </div>
         </div>
 
@@ -111,6 +139,7 @@ export default function Dashboard() {
                 <span className="text-xs text-gray-600 capitalize">{agent.status}</span>
               </div>
             ))}
+            {agents.length === 0 && <div className="text-sm text-gray-500">No agents available.</div>}
           </div>
         </div>
       </div>
@@ -137,6 +166,7 @@ export default function Dashboard() {
               <span className="text-xs text-gray-600 shrink-0">{new Date(op.timestamp).toLocaleTimeString()}</span>
             </div>
           ))}
+          {recentOps.length === 0 && <div className="text-sm text-gray-500">No live operations received yet.</div>}
         </div>
       </div>
     </div>
