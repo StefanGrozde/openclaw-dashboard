@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
+    "deploy": "npm run build && cp -r dist/ ~/.openclaw/projects/admin-dashboard/output/admin-dashboard/dist/",
     "preview": "vite preview"
   },
   "dependencies": {
